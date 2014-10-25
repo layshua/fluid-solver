@@ -392,13 +392,13 @@ int main ( int argc, char ** argv )
     }
 
     if ( argc == 1 ) {
-        N = 200;
+        N = 250;
         dt = 0.01f;
         diff = 0.0000f;
         visc = 0.000001f;
         force = 2000.0f;
         source = 600.0f;
-        gravity = 4.f;
+        gravity = 0.f;
         fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g gravity=%g\n",
                   N, dt, diff, visc, force, source, gravity );
     } else {
