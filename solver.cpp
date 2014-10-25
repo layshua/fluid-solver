@@ -38,17 +38,23 @@ void set_bnd ( int N, int b, float * x)
     END_FOR
 }
 
-/** Finds inverse matrix using jacobi method */
+/** Finds inverse matrix using jacobi method
+* TODO: Replace with successive overrelaxation (O(N^(3/2)) instead of O(N^2). in paralell sqrt(N)
+* instead of N as for jacobi. It can be paralellized directly)
+* Also try to improve it to FFT based method (O(N * log(N)))
+* http://www.cs.berkeley.edu/~demmel/cs267/lecture24/lecture24.html
+*/
 void lin_solve ( int N, int b, float * x, float * x0, float a, float c )
 {
     int i, j, k;
 
     //k can be increased for higher precission, however this is very time consuming!
-    for ( k=0 ; k<5 ; k++ ) {
+    for ( k=0 ; k<1 ; k++ ) {
         FOR_EACH_CELL
                 x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) )/c;
         END_FOR
-                set_bnd ( N, b, x );
+
+        set_bnd ( N, b, x );
     }
 }
 

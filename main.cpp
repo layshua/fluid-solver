@@ -393,7 +393,7 @@ int main ( int argc, char ** argv )
     }
 
     if ( argc == 1 ) {
-        N = 255;
+        N = 400;
         dt = 0.01f;
         diff = 0.00000f;
         visc = 0.000001f;
