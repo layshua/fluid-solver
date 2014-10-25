@@ -39,8 +39,8 @@ void set_bnd ( int N, int b, float * x)
     //bounce off domain boundaries
     x[IX(0  ,i)] = b==1 ? -x[IX(1,i)] : x[IX(1,i)];
     x[IX(N+1,i)] = b==1 ? -x[IX(N,i)] : x[IX(N,i)];
-    x[IX(i,0  )] = b==2 ? -x[IX(i,1)] : x[IX(i,1)];
-    x[IX(i,N+1)] = b==2 ? -x[IX(i,N)] : x[IX(i,N)];
+    //x[IX(i,0  )] = b==2 ? -x[IX(i,1)] : x[IX(i,1)];
+    //x[IX(i,N+1)] = b==2 ? -x[IX(i,N)] : x[IX(i,N)];
     END_FOR
 }
 
@@ -49,14 +49,13 @@ void set_bnd ( int N, int b, float * x)
 void lin_solve ( int N, int b, float * x, float * x0, float a, float c )
 {
     int i, j, k;
-    float w = 1.4f; //(1.f + sinf(3.1415926535/((N+2)+1.f))); //magintude. Fixed value is set but the formula
-                                                              //can be used to find more optimal one.
-                                                              //it must be between 1 and 2
+    //magintude. Fixed value is set but the formula can be used to find more optimal one.
+    //it must be between 1 and 2
+    float w = 1.4;
 
-
-    for ( k=0 ; k<6 ; k++ ) {
+    for ( k=0 ; k<20 ; k++ ) {
         FOR_EACH_CELL
-                x[IX(i,j)]=x[IX(i,j)] + w*((a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) + x0[IX(i,j)])/c - x[IX(i,j)]);
+                x[IX(i,j)]=x[IX(i,j)] + w*((x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]))/c -x[IX(i,j)] );
                 //x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) )/c; //old jacobi for comparison
         END_FOR
 
@@ -68,7 +67,12 @@ void lin_solve ( int N, int b, float * x, float * x0, float a, float c )
 void diffuse ( int N, int b, float * x, float * x0, float diff, float dt )
 {
     float a=dt*diff*N*N;
-    lin_solve ( N, b, x, x0, a, 1+4*a );
+    int i,j;
+
+    //one iteration of gauss-seidel method is surprisingly sufficient for calculating diffusion. What matters are velocity fields
+    FOR_EACH_CELL
+        x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) )/(1+4*a); //old jacobi for comparison
+    END_FOR
 }
 
 /** performs advection (movement of particles) by means of linear interpolation.
