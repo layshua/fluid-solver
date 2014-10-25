@@ -226,8 +226,7 @@ static void apply_gravity(float *d, float *u, float *v)
     int size = (N)*(N);
     int i,j;
     FOR_EACH_CELL
-            //u[IX(i,j)]+=cosf(j/N*0.25f)*10.f;
-            //v[IX(i,j)]+=cosf(i/N + 0.5f);
+        v[IX(i,j)]-=gravity;
     END_FOR
 }
 
@@ -286,7 +285,7 @@ static void idle_func ( void )
 {
     glPointSize((glutGet(GLUT_WINDOW_WIDTH)+glutGet(GLUT_WINDOW_WIDTH))/(1.2f*N));
     get_from_UI ( dens_prev, u_prev, v_prev );
-    //apply_gravity(dens_prev, u_prev, v_prev);
+    apply_gravity(dens_prev, u_prev, v_prev);
 
     vel_step ( N, u, v, u_prev, v_prev, visc, dt );
     dens_step ( N, dens, dens_prev, u, v, diff, dt );
@@ -393,9 +392,9 @@ int main ( int argc, char ** argv )
     }
 
     if ( argc == 1 ) {
-        N = 400;
+        N = 200;
         dt = 0.01f;
-        diff = 0.00000f;
+        diff = 0.0000f;
         visc = 0.000001f;
         force = 2000.0f;
         source = 600.0f;
