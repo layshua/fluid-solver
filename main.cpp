@@ -37,6 +37,7 @@ static int win_id;
 static int win_x, win_y;
 static int mouse_down[3];
 static int omx, omy, mx, my;
+static bool emit=false;
 
 
 /*
@@ -114,7 +115,7 @@ static void draw_velocity ( void )
 {
     int i, j;
     float x, y, h;
-
+    float norm = force/100.f;
     h = 1.0f/N;
 
     glColor3f ( 1.0f, 1.0f, 1.0f );
@@ -129,7 +130,7 @@ static void draw_velocity ( void )
             glColor3f(1,0,0);
             glVertex2f ( x, y );
             glColor3f(0,3.f*fabs(u[IX(i,j)] + v[IX(i,j)]), 0);
-            glVertex2f ( x+u[IX(i,j)], y+v[IX(i,j)] );
+            glVertex2f ( x+u[IX(i,j)]/norm, y+v[IX(i,j)]/norm );
         }
     }
 
@@ -150,8 +151,8 @@ static void draw_density ( void )
         for ( j=0 ; j<=N ; j++ ) {
             y = (j-0.5f)*h;
             d00 = dens[IX(i,j)];
-            d01 = fabs(u[IX(i,j)] + v[IX(i,j)])/2.f;
-            glColor4f (2.f-d00, d01*d00, d01/5.f, d00); glVertex2f ( x, y );
+            d01 = fabs(u[IX(i,j)] + v[IX(i,j)])/4.f;
+            glColor4f (d00, d01, d01/2.f, d00); glVertex2f ( x, y );
         }
     }
 
@@ -227,8 +228,15 @@ static void apply_gravity(float *d, float *u, float *v)
 {
     int size = (N)*(N);
     int i,j;
-    for(int i=N/8; i<N-N/8; i++)
-        v[IX(i,N/8)]+=100*gravity;
+
+
+    if(emit)
+    {
+        FOR_EACH_CELL
+                v[IX(i,j)]=-gravity;
+        END_FOR
+
+    }
 
 }
 
@@ -257,6 +265,8 @@ static void key_func ( unsigned char key, int x, int y )
     case 'V':
         dvel = !dvel;
         break;
+    case ' ':
+        emit=!emit;
     }
 }
 
@@ -394,13 +404,13 @@ int main ( int argc, char ** argv )
     }
 
     if ( argc == 1 ) {
-        N = 500;
+        N = 250;
         dt = 0.005f;
-        diff = 0.00001f;
-        visc = 0.000001f;
-        force = 800.0f;
+        diff = 0.000f;
+        visc = 0.0000f;
+        force = 2000.0f;
         source = 1000.0f;
-        gravity = 15.f;
+        gravity = 8.f;
         fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g gravity=%g\n",
                   N, dt, diff, visc, force, source, gravity );
     } else {
