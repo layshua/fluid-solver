@@ -30,9 +30,9 @@ void set_bnd ( int N, int b, float * x)
     int j;
 
     FOR_EACH_CELL
-    //bounce off obstacles
-    if(obstacle[IX(i-1, j)])
-        x[IX(i ,j)] = b==1 ? -x[IX(i+1 ,j)] : x[IX(i+1 ,j)];
+            //bounce off obstacles
+            if(obstacle[IX(i-1, j)])
+            x[IX(i ,j)] = b==1 ? -x[IX(i+1 ,j)] : x[IX(i+1 ,j)];
     if(obstacle[IX(i+1, j)])
         x[IX(i ,j)] = b==1 ? -x[IX(i-1 ,j)] : x[IX(i-1 ,j)];
     if(obstacle[IX(i, j-1)])
@@ -60,10 +60,10 @@ void lin_solve ( int N, int b, float * x, float * x0, float a, float c )
     for ( k=0 ; k<20 ; k++ ) {
         FOR_EACH_CELL
                 x[IX(i,j)]=x[IX(i,j)] + w*((x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]))/c -x[IX(i,j)] );
-                //x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) )/c; //old jacobi for comparison
+        //x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) )/c; //old jacobi for comparison
         END_FOR
 
-        set_bnd ( N, b, x );
+                set_bnd ( N, b, x );
     }
 }
 
@@ -75,8 +75,8 @@ void diffuse ( int N, int b, float * x, float * x0, float diff, float dt )
     int i,j;
 
     for(int k = 0; k<2; k++)
-    FOR_EACH_CELL
-        x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) )/c;
+        FOR_EACH_CELL
+                x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) )/c;
     END_FOR
 }
 
@@ -86,84 +86,62 @@ void diffuse ( int N, int b, float * x, float * x0, float diff, float dt )
  * interpolation */
 void advect ( int N, int b, float * d, float * d0, float * u, float * v, float dt )
 {
-    //So far we have broken MacCormack ..
 
-//    //TODO: Replace this shit with MacCormack method that performs two
-//    //intermediate semi-Lagrangian advection steps.
-//    int i, j, i0, j0, i1, j1;
-//    float x, y, s0, t0, s1, t1, dt0;
+    //    //TODO: Replace this shit with MacCormack method that performs two
+    //    //intermediate semi-Lagrangian advection steps.
+    //    int i, j, i0, j0, i1, j1;
+    //    float x, y, s0, t0, s1, t1, dt0;
 
-//    dt0 = dt*N;
+    //    dt0 = dt*N;
 
-//    FOR_EACH_CELL
-//    //determine from which cell we should propagate density to current cell..
-//    x = i-dt0*u[IX(i,j)];
-//    y = j-dt0*v[IX(i,j)];
+    //    FOR_EACH_CELL
+    //    //determine from which cell we should propagate density to current cell..
+    //    x = i-dt0*u[IX(i,j)];
+    //    y = j-dt0*v[IX(i,j)];
 
-//    //...but no further than lattice boundaries
-//    if (x<0.5f)
-//        x=0.5f;
-//    if (x>N+0.5f)
-//        x=N+0.5f;
-//    if (y<0.5f)
-//        y=0.5f;
-//    if (y>N+0.5f)
-//        y=N+0.5f;
+    //    //...but no further than lattice boundaries
+    //    if (x<0.5f)
+    //        x=0.5f;
+    //    if (x>N+0.5f)
+    //        x=N+0.5f;
+    //    if (y<0.5f)
+    //        y=0.5f;
+    //    if (y>N+0.5f)
+    //        y=N+0.5f;
 
-//    //linear interpolation
-//    i0=(int)x;
-//    i1=i0+1;
-//    j0=(int)y;
-//    j1=j0+1;
+    //    //linear interpolation
+    //    i0=(int)x;
+    //    i1=i0+1;
+    //    j0=(int)y;
+    //    j1=j0+1;
 
-//    s1 = x-i0;
-//    s0 = 1-s1;
-//    t1 = y-j0;
-//    t0 = 1-t1;
+    //    //s0*t0 is the area of IX(i0,j0) that is taken into account and so on
+    //    s1 = x-i0;
+    //    s0 = 1-s1;
+    //    t1 = y-j0;
+    //    t0 = 1-t1;
 
-//    //set new values
-//    d[IX(i,j)] = s0*(t0*d0[IX(i0,j0)] + t1*d0[IX(i0,j1)])+
-//                 s1*(t0*d0[IX(i1,j0)] + t1*d0[IX(i1,j1)]);
-//    END_FOR
+    //    //set new values
+    //    d[IX(i,j)] = s0*(t0*d0[IX(i0,j0)] + t1*d0[IX(i0,j1)])+
+    //                 s1*(t0*d0[IX(i1,j0)] + t1*d0[IX(i1,j1)]);
+    //    END_FOR
 
-//    set_bnd ( N, b, d );
+    //    set_bnd ( N, b, d );
 
-    //TODO: Replace this shit with MacCormack method that performs two
-    //intermediate semi-Lagrangian advection steps.
-    int i, j, i0, j0, i1, j1;
-    float x, dx, y, dy, s0, t0, s1, t1, dt0;
+    //MacCormack - not working
+    int i, j;
+    float  dx, dy, dt0;
 
     dt0 = dt*N;
 
     FOR_EACH_CELL
-    //determine from which cell we should propagate density to current cell..
-    x = i-dt0*u[IX(i,j)];
-    y = j-dt0*v[IX(i,j)];
 
-    //...but no further than lattice boundaries
-        if (x<0.5f)
-            x=0.5f;
-        if (x>N+0.5f)
-            x=N+0.5f;
-        if (y<0.5f)
-            y=0.5f;
-        if (y>N+0.5f)
-            y=N+0.5f;
-
-    dx = x+i;
-    dy = y+j;
-
-    //linear interpolation
-    i0=(int)x-1;
-    i1=i0+2;
-    j0=(int)y-1;
-    j1=j0+2;
+    dx = fabs(i-u[IX(i,j)]*dt);
+    dy = fabs(j-v[IX(i,j)]*dt);
 
     //set new values
-    d[IX(i,j)] = d0[IX((int)x,(int)y)] - dt0/dx * (d0[IX(i0,j0)]-d0[IX(i1,j0)]) - dt0/dy * (d0[IX(i0,j0)]-d0[IX(i0,j1)]);
+    d[IX(i,j)] = d0[IX(i,j)] - dt0/dx * (d0[IX(i+1,j)]*u[IX(i+1,j)] - d0[IX(i-1,j)]*u[IX(i-1,j)]) - dt0/dy * (d0[IX(i,j+1)]*v[IX(i,j+1)] - d0[IX(i,j-1)]*v[IX(i,j-1)]);
 
-            //s0*(t0*d0[IX(i0,j0)] + t1*d0[IX(i0,j1)])+
-            //s1*(t0*d0[IX(i1,j0)] + t1*d0[IX(i1,j1)]);
     END_FOR
 
     set_bnd ( N, b, d );
@@ -178,12 +156,12 @@ void project ( int N, float * u, float * v, float * p, float * div )
     int i, j;
 
     FOR_EACH_CELL
-    div[IX(i,j)] = -0.5f*(u[IX(i+1,j)]-u[IX(i-1,j)]+v[IX(i,j+1)]-v[IX(i,j-1)])/N;
+            div[IX(i,j)] = -0.5f*(u[IX(i+1,j)]-u[IX(i-1,j)]+v[IX(i,j+1)]-v[IX(i,j-1)])/N;
     p[IX(i,j)] = 0;
     END_FOR
 
-    //neccessary to prevent simulation from blowing up
-    set_bnd ( N, 0, div );
+            //neccessary to prevent simulation from blowing up
+            set_bnd ( N, 0, div );
     set_bnd ( N, 0, p );
 
     //find inverse matrix to obtain velocity gradient field
@@ -191,12 +169,12 @@ void project ( int N, float * u, float * v, float * p, float * div )
 
     //subtract gradient field from current velocities to
     FOR_EACH_CELL
-    u[IX(i,j)] -= 0.5f*N*(p[IX(i+1,j)]-p[IX(i-1,j)]);
+            u[IX(i,j)] -= 0.5f*N*(p[IX(i+1,j)]-p[IX(i-1,j)]);
     v[IX(i,j)] -= 0.5f*N*(p[IX(i,j+1)]-p[IX(i,j-1)]);
     END_FOR
 
-    //neccessary to prevent simulation from blowing up
-    set_bnd ( N, 1, u );
+            //neccessary to prevent simulation from blowing up
+            set_bnd ( N, 1, u );
     set_bnd ( N, 2, v );
 }
 
