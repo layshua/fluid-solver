@@ -137,35 +137,10 @@ static void draw_velocity ( void )
     glEnd ();
 }
 
-static void draw_density ( void )
-{
-    int i, j;
-    float x, y, h, d00, d01, d02=0.f;
-
-    h = 1.0f/N;
-
-    glBegin ( GL_POINTS );
-
-    for ( i=0 ; i<=N ; i++ ) {
-        x = (i-0.5f)*h;
-        for ( j=0 ; j<=N ; j++ ) {
-            y = (j-0.5f)*h;
-            d00 = dens[IX(i,j)]*3.f;
-            if(d00>1.f)
-                d00=1.f;
-
-            glColor4f (d00, d00, d00, d00);
-            glVertex2f ( x, y );
-        }
-    }
-
-    glEnd ();
-}
-
 //static void draw_density ( void )
 //{
 //    int i, j;
-//    float x, y, h, d00, d01;
+//    float x, y, h, d00, d01, d02=0.f;
 
 //    h = 1.0f/N;
 
@@ -175,14 +150,41 @@ static void draw_density ( void )
 //        x = (i-0.5f)*h;
 //        for ( j=0 ; j<=N ; j++ ) {
 //            y = (j-0.5f)*h;
-//            d00 = dens[IX(i,j)];
-//            d01 = fabs(u[IX(i,j)] + v[IX(i,j)])/2.f;
-//            glColor4f (2.f-d00, d01*d00, d01/5.f, d00*2.f); glVertex2f ( x, y );
+//            d00 = dens[IX(i,j)]*3.f;
+//            if(d00>1.f)
+//                d00=1.f;
+
+//            glColor4f (d00, d00, d00, d00);
+//            glVertex2f ( x, y );
 //        }
 //    }
 
 //    glEnd ();
 //}
+
+static void draw_density ( void )
+{
+    int i, j;
+    float x, y, h, d00, d01;
+    float r,g,b;
+    h = 1.0f/N;
+
+    glBegin ( GL_POINTS );
+
+    for ( i=0 ; i<=N ; i++ ) {
+        x = (i-0.5f)*h;
+        for ( j=0 ; j<=N ; j++ ) {
+            y = (j-0.5f)*h;
+            d00 = dens[IX(i,j)];
+            d01 = fabs(u[IX(i,j)] + v[IX(i,j)])/2.f;
+            r=fabs(d00*(d01));
+
+            glColor4f (r+0.5, r, r-0.6f,d00); glVertex2f ( x, y );
+        }
+    }
+
+    glEnd ();
+}
 
 static void draw_obstacle ( void )
 {
@@ -265,12 +267,12 @@ static void apply_gravity(float *d, float *u, float *v)
 
     if(emmiting)
     {
-        //        for(int i=N/2.4; i<N-N/2.4; i++)
-        //            v[IX(i,N/3)]=force;
+                for(int i=N/2.4; i<N-N/2.4; i++)
+                    v[IX(i,N/3)]=force/6.f;
 
-        FOR_EACH_CELL
-                v[IX(i,j)]=-gravity;
-        END_FOR
+//        FOR_EACH_CELL
+//                v[IX(i,j)]=-gravity;
+//        END_FOR
 
     }
 
@@ -447,11 +449,11 @@ int main ( int argc, char ** argv )
     }
 
     if ( argc == 1 ) {
-        N = 300;
+        N = 250;
         dt = 0.01f;
         diff = 0.0000f;
         visc = 0.000000f;
-        force = 2000.0f;
+        force = 1000.0f;
         source = 600.0f;
         gravity = 3.f;
         fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g gravity=%g\n",

@@ -54,10 +54,10 @@ void set_bnd ( int N, int b, float * x, bool velocity)
         x[IX(i ,j)] =  -x[IX(i+1 ,j-1)];
 
     //bounce off domain boundaries
-    x[IX(0  ,i)] = b==1 ? -x[IX(1,i)] : x[IX(1,i)];   //left
-    x[IX(N+1,i)] = b==1 ? -x[IX(N,i)] : x[IX(N,i)];   //right
+    //x[IX(0  ,i)] = b==1 ? -x[IX(1,i)] : x[IX(1,i)];   //left
+    //x[IX(N+1,i)] = b==1 ? -x[IX(N,i)] : x[IX(N,i)];   //right
     //x[IX(i,0  )] = b==2 ? -x[IX(i,1)] : x[IX(i,1)];  //bottom
-    x[IX(i,N+1)] = b==2 ? -x[IX(i,N)] : x[IX(i,N)];  //top
+    //x[IX(i,N+1)] = b==2 ? -x[IX(i,N)] : x[IX(i,N)];  //top
 
     //clamp densities
     if(velocity==0)
@@ -303,8 +303,8 @@ void project ( int N, float * u, float * v, float * p, float * div )
     v[IX(i,j)] -= 0.5f*N*(p[IX(i,j+1)]-p[IX(i,j-1)]);
     END_FOR
 
-            //neccessary to prevent simulation from blowing up
-            set_bnd ( N, 1, u, true);
+    //neccessary to prevent simulation from blowing up
+    set_bnd ( N, 1, u, true);
     set_bnd ( N, 2, v, true );
 }
 
