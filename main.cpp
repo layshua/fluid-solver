@@ -37,8 +37,8 @@ static int win_id;
 static int win_x, win_y;
 static int mouse_down[3];
 static int omx, omy, mx, my;
-static bool emmiting=false;
-
+static bool emmiting = false;
+static bool paused = false;
 
 /*
   ----------------------------------------------------------------------
@@ -154,13 +154,35 @@ static void draw_density ( void )
             if(d00>1.f)
                 d00=1.f;
 
-            glColor4f (d00, d00, d00, 1);
+            glColor4f (d00, d00, d00, d00);
             glVertex2f ( x, y );
         }
     }
 
     glEnd ();
 }
+
+//static void draw_density ( void )
+//{
+//    int i, j;
+//    float x, y, h, d00, d01;
+
+//    h = 1.0f/N;
+
+//    glBegin ( GL_POINTS );
+
+//    for ( i=0 ; i<=N ; i++ ) {
+//        x = (i-0.5f)*h;
+//        for ( j=0 ; j<=N ; j++ ) {
+//            y = (j-0.5f)*h;
+//            d00 = dens[IX(i,j)];
+//            d01 = fabs(u[IX(i,j)] + v[IX(i,j)])/2.f;
+//            glColor4f (2.f-d00, d01*d00, d01/5.f, d00*2.f); glVertex2f ( x, y );
+//        }
+//    }
+
+//    glEnd ();
+//}
 
 static void draw_obstacle ( void )
 {
@@ -219,7 +241,7 @@ static void get_from_UI ( float * d, float * u, float * v )
             {
                 if(emmiting)
                 {
-                    if(k%2)
+
                         d[IX(k,j)] = source/5;
                 }
                 else
@@ -243,6 +265,9 @@ static void apply_gravity(float *d, float *u, float *v)
 
     if(emmiting)
     {
+        //        for(int i=N/2.4; i<N-N/2.4; i++)
+        //            v[IX(i,N/3)]=force;
+
         FOR_EACH_CELL
                 v[IX(i,j)]=-gravity;
         END_FOR
@@ -278,6 +303,11 @@ static void key_func ( unsigned char key, int x, int y )
         break;
     case ' ':
         emmiting=!emmiting;
+        break;
+    case 'P':
+    case 'p':
+        paused=!paused;
+        break;
     }
 }
 
@@ -308,11 +338,13 @@ static void idle_func ( void )
 {
     glPointSize((glutGet(GLUT_WINDOW_WIDTH)+glutGet(GLUT_WINDOW_WIDTH))/(1.2f*N));
     get_from_UI ( dens_prev, u_prev, v_prev );
-    apply_gravity(dens_prev, u_prev, v_prev);
 
-    vel_step ( N, u, v, u_prev, v_prev, visc, dt );
-    dens_step ( N, dens, dens_prev, u, v, diff, dt );
-
+    if(!paused)
+    {
+        apply_gravity(dens_prev, u_prev, v_prev);
+        vel_step ( N, u, v, u_prev, v_prev, visc, dt );
+        dens_step ( N, dens, dens_prev, u, v, diff, dt );
+    }
     glutSetWindow ( win_id );
     glutPostRedisplay ();
 }
@@ -321,15 +353,15 @@ static void show_framerate()
 {
     if(frame_iter==0)
         start=clock();
-    if(frame_iter<2)
+    if(frame_iter<10)
         frame_iter++;
     else
     {
         frame_iter=0;
         stop=clock();
-        seconds = (float)(stop - start) / CLOCKS_PER_SEC / 2.f;
+        seconds = (float)(stop - start) / CLOCKS_PER_SEC / 10.f;
         seconds = 1.f/seconds;
-       // dt=0.1f/seconds; //optional adjustment of physics frames to time rate to keep it realistic
+        // dt=0.1f/seconds; //optional adjustment of physics frames to time rate to keep it realistic
         snprintf(framerate, 8, "%f", seconds);
     }
 
@@ -339,14 +371,13 @@ static void show_framerate()
     glRasterPos2f(-1, 0.95);
     for(int z=0; z<8; z++)
         glutBitmapCharacter(GLUT_BITMAP_8_BY_13, (int)framerate[z]);
-    glutSwapBuffers();
     glRasterPos2f(0, 0);
 }
 
 static void display_func ( void )
 {
 
-    show_framerate();
+
     pre_display ();
 
     if ( dvel ) draw_velocity ();
@@ -355,6 +386,7 @@ static void display_func ( void )
         draw_density ();
         draw_obstacle ();
     }
+    show_framerate();
     post_display ();
 
 }
@@ -415,13 +447,13 @@ int main ( int argc, char ** argv )
     }
 
     if ( argc == 1 ) {
-        N = 400;
-        dt = 0.005f;
-        diff = 0.00001f;
-        visc = 0.0000f;
+        N = 300;
+        dt = 0.01f;
+        diff = 0.0000f;
+        visc = 0.000000f;
         force = 2000.0f;
-        source = 1000.0f;
-        gravity = 16.f;
+        source = 600.0f;
+        gravity = 3.f;
         fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g gravity=%g\n",
                   N, dt, diff, visc, force, source, gravity );
     } else {
