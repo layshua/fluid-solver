@@ -30,9 +30,9 @@ void set_bnd ( int N, int b, float * x)
     int j;
 
     FOR_EACH_CELL
-            //bounce off obstacles
-            if(obstacle[IX(i-1, j)])
-            x[IX(i ,j)] = b==1 ? -x[IX(i+1 ,j)] : x[IX(i+1 ,j)];
+    //bounce off obstacles
+    if(obstacle[IX(i-1, j)])
+        x[IX(i ,j)] = b==1 ? -x[IX(i+1 ,j)] : x[IX(i+1 ,j)];
     if(obstacle[IX(i+1, j)])
         x[IX(i ,j)] = b==1 ? -x[IX(i-1 ,j)] : x[IX(i-1 ,j)];
     if(obstacle[IX(i, j-1)])
@@ -41,10 +41,10 @@ void set_bnd ( int N, int b, float * x)
         x[IX(i ,j)] = b==2 ? -x[IX(i ,j-1)] : x[IX(i ,j-1)];
 
     //bounce off domain boundaries
-    x[IX(0  ,i)] = b==1 ? -x[IX(1,i)] : x[IX(1,i)];
-    x[IX(N+1,i)] = b==1 ? -x[IX(N,i)] : x[IX(N,i)];
-    //x[IX(i,0  )] = b==2 ? -x[IX(i,1)] : x[IX(i,1)];
-    //x[IX(i,N+1)] = b==2 ? -x[IX(i,N)] : x[IX(i,N)];
+    x[IX(0  ,i)] = b==1 ? -x[IX(1,i)] : x[IX(1,i)];   //left
+    x[IX(N+1,i)] = b==1 ? -x[IX(N,i)] : x[IX(N,i)];   //right
+    //x[IX(i,0  )] = b==2 ? -x[IX(i,1)] : x[IX(i,1)];  //bottom
+    x[IX(i,N+1)] = b==2 ? -x[IX(i,N)] : x[IX(i,N)];  //top
     END_FOR
 }
 
@@ -57,10 +57,10 @@ void lin_solve ( int N, int b, float * x, float * x0, float a, float c )
     //it must be between 1 and 2
     float w = 1.5f;
 
-    for ( k=0 ; k<20 ; k++ ) {
+    for ( k=0 ; k<12 ; k++ ) {
         FOR_EACH_CELL
-                x[IX(i,j)]=x[IX(i,j)] + w*((x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]))/c -x[IX(i,j)] );
-        //x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) )/c; //old jacobi for comparison
+            x[IX(i,j)]=x[IX(i,j)] + w*((x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]))/c -x[IX(i,j)] );
+            //x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) )/c; //old jacobi for comparison
         END_FOR
 
                 set_bnd ( N, b, x );
@@ -74,77 +74,178 @@ void diffuse ( int N, int b, float * x, float * x0, float diff, float dt )
     float c=1.f+4.f*a;
     int i,j;
 
-    for(int k = 0; k<2; k++)
+    for(int k = 0; k<4; k++)
         FOR_EACH_CELL
                 x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) )/c;
     END_FOR
 }
 
-/** performs advection (movement of particles) by means of linear interpolation.
- * This function interpolates how much of current value of current particle should
- * propagate to another particle whose coordinates are determined by the linear
- * interpolation */
-void advect ( int N, int b, float * d, float * d0, float * u, float * v, float dt )
+/** performs BFECC advection basing on semi-lagrangian method (see function advect) */
+void advect_vel ( int N, int b, float * d, float * d0, float * u, float * v, float dt )
 {
-
-    //    //TODO: Replace this shit with MacCormack method that performs two
-    //    //intermediate semi-Lagrangian advection steps.
-    //    int i, j, i0, j0, i1, j1;
-    //    float x, y, s0, t0, s1, t1, dt0;
-
-    //    dt0 = dt*N;
-
-    //    FOR_EACH_CELL
-    //    //determine from which cell we should propagate density to current cell..
-    //    x = i-dt0*u[IX(i,j)];
-    //    y = j-dt0*v[IX(i,j)];
-
-    //    //...but no further than lattice boundaries
-    //    if (x<0.5f)
-    //        x=0.5f;
-    //    if (x>N+0.5f)
-    //        x=N+0.5f;
-    //    if (y<0.5f)
-    //        y=0.5f;
-    //    if (y>N+0.5f)
-    //        y=N+0.5f;
-
-    //    //linear interpolation
-    //    i0=(int)x;
-    //    i1=i0+1;
-    //    j0=(int)y;
-    //    j1=j0+1;
-
-    //    //s0*t0 is the area of IX(i0,j0) that is taken into account and so on
-    //    s1 = x-i0;
-    //    s0 = 1-s1;
-    //    t1 = y-j0;
-    //    t0 = 1-t1;
-
-    //    //set new values
-    //    d[IX(i,j)] = s0*(t0*d0[IX(i0,j0)] + t1*d0[IX(i0,j1)])+
-    //                 s1*(t0*d0[IX(i1,j0)] + t1*d0[IX(i1,j1)]);
-    //    END_FOR
-
-    //    set_bnd ( N, b, d );
-
-    //MacCormack - not working
-    int i, j;
-    float  dx, dy, dt0;
+    int i, j, i0, j0, i1, j1;
+    float x, y, s0, t0, s1, t1, dt0;
 
     dt0 = dt*N;
 
-    FOR_EACH_CELL
+    float *fi_ = (float*)malloc((N+2)*(N+2)*sizeof(float));
+    float *fi_t = (float*)malloc((N+2)*(N+2)*sizeof(float));
 
-    dx = fabs(i-u[IX(i,j)]*dt);
-    dy = fabs(j-v[IX(i,j)]*dt);
+    //Step 1:  determine fi~
+    //d -> fi~
+    //d0 -> fi^n
+    FOR_EACH_CELL
+    //determine from which cell we should propagate density to current cell..
+    x = i-dt0*u[IX(i,j)];
+    y = j-dt0*v[IX(i,j)];
+
+    //...but no further than lattice boundaries
+    if (x<0.5f)
+        x=0.5f;
+    if (x>N+0.5f)
+        x=N+0.5f;
+    if (y<0.5f)
+        y=0.5f;
+    if (y>N+0.5f)
+        y=N+0.5f;
+
+    //linear interpolation
+    i0=(int)x;
+    i1=i0+1;
+    j0=(int)y;
+    j1=j0+1;
+
+    //s0*t0 is the area of IX(i0,j0) that is taken into account and so on
+    s1 = x-i0;
+    s0 = 1-s1;
+    t1 = y-j0;
+    t0 = 1-t1;
 
     //set new values
-    d[IX(i,j)] = d0[IX(i,j)] - dt0/dx * (d0[IX(i+1,j)]*u[IX(i+1,j)] - d0[IX(i-1,j)]*u[IX(i-1,j)]) - dt0/dy * (d0[IX(i,j+1)]*v[IX(i,j+1)] - d0[IX(i,j-1)]*v[IX(i,j-1)]);
+    d[IX(i,j)] = s0*(t0*d0[IX(i0,j0)] + t1*d0[IX(i0,j1)])+
+            s1*(t0*d0[IX(i1,j0)] + t1*d0[IX(i1,j1)]);
+    END_FOR
+    //set_bnd ( N, b, d);
 
+    //Step 2: determine fi_
+    FOR_EACH_CELL
+    //determine from which cell we should propagate density to current cell..
+    x = i-dt0*(-u[IX(i,j)]);
+    y = j-dt0*(-v[IX(i,j)]);
+
+    //...but no further than lattice boundaries
+    if (x<0.5f)
+        x=0.5f;
+    if (x>N+0.5f)
+        x=N+0.5f;
+    if (y<0.5f)
+        y=0.5f;
+    if (y>N+0.5f)
+        y=N+0.5f;
+
+    //linear interpolation
+    i0=(int)x;
+    i1=i0+1;
+    j0=(int)y;
+    j1=j0+1;
+
+    //s0*t0 is the area of IX(i0,j0) that is taken into account and so on
+    s1 = x-i0;
+    s0 = 1-s1;
+    t1 = y-j0;
+    t0 = 1-t1;
+
+    //set new values
+    fi_[IX(i,j)] = s0*(t0*d[IX(i0,j0)] + t1*d[IX(i0,j1)])+
+            s1*(t0*d[IX(i1,j0)] + t1*d[IX(i1,j1)]);
+    END_FOR
+    //set_bnd ( N, b, fi_);
+
+    FOR_EACH_CELL
+    fi_t[IX(i,j)] = d0[IX(i,j)] + (d0[IX(i,j)] - fi_[IX(i,j)])/2.f;
+    END_FOR
+    //set_bnd ( N, b, fi_t);
+
+    //Final step
+    FOR_EACH_CELL
+    //determine from which cell we should propagate density to current cell..
+    x = i-dt0*u[IX(i,j)];
+    y = j-dt0*v[IX(i,j)];
+
+    //...but no further than lattice boundaries
+    if (x<0.5f)
+        x=0.5f;
+    if (x>N+0.5f)
+        x=N+0.5f;
+    if (y<0.5f)
+        y=0.5f;
+    if (y>N+0.5f)
+        y=N+0.5f;
+
+    //linear interpolation
+    i0=(int)x;
+    i1=i0+1;
+    j0=(int)y;
+    j1=j0+1;
+
+    //s0*t0 is the area of IX(i0,j0) that is taken into account and so on
+    s1 = x-i0;
+    s0 = 1-s1;
+    t1 = y-j0;
+    t0 = 1-t1;
+
+    //set new values
+    d[IX(i,j)] = s0*(t0*fi_t[IX(i0,j0)] + t1*fi_t[IX(i0,j1)])+
+                 s1*(t0*fi_t[IX(i1,j0)] + t1*fi_t[IX(i1,j1)]);
     END_FOR
 
-    set_bnd ( N, b, d );
+    //set_bnd ( N, b, d);
+}
+
+/** performs advection (movement of particles) by means of semi lagrangian method.
+ * This function traces velocity vectors backwards in order to see how much of each
+ * value should propagate to current cell */
+void advect ( int N, int b, float * d, float * d0, float * u, float * v, float dt )
+{
+
+        int i, j, i0, j0, i1, j1;
+        float x, y, s0, t0, s1, t1, dt0;
+
+        dt0 = dt*N;
+
+        FOR_EACH_CELL
+        //determine from which cell we should propagate density to current cell..
+        x = i-dt0*u[IX(i,j)];
+        y = j-dt0*v[IX(i,j)];
+
+        //...but no further than lattice boundaries
+        if (x<0.5f)
+            x=0.5f;
+        if (x>N+0.5f)
+            x=N+0.5f;
+        if (y<0.5f)
+            y=0.5f;
+        if (y>N+0.5f)
+            y=N+0.5f;
+
+        //linear interpolation
+        i0=(int)x;
+        i1=i0+1;
+        j0=(int)y;
+        j1=j0+1;
+
+        //s0*t0 is the area of IX(i0,j0) that is taken into account and so on
+        s1 = x-i0;
+        s0 = 1-s1;
+        t1 = y-j0;
+        t0 = 1-t1;
+
+        //set new values
+        d[IX(i,j)] = s0*(t0*d0[IX(i0,j0)] + t1*d0[IX(i0,j1)])+
+                     s1*(t0*d0[IX(i1,j0)] + t1*d0[IX(i1,j1)]);
+        END_FOR
+
+        set_bnd ( N, b, d );
 }
 
 /**
@@ -194,8 +295,8 @@ void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc,
     SWAP ( u0, u );
     SWAP ( v0, v );
 
-    advect ( N, 1, u, u0, u0, v0, dt );
-    advect ( N, 2, v, v0, u0, v0, dt );
+    advect_vel ( N, 1, u, u0, u0, v0, dt );
+    advect_vel ( N, 2, v, v0, u0, v0, dt );
     project ( N, u, v, u0, v0 );
 }
 

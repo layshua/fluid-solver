@@ -37,7 +37,7 @@ static int win_id;
 static int win_x, win_y;
 static int mouse_down[3];
 static int omx, omy, mx, my;
-static bool emit=false;
+static bool emmiting=false;
 
 
 /*
@@ -140,7 +140,7 @@ static void draw_velocity ( void )
 static void draw_density ( void )
 {
     int i, j;
-    float x, y, h, d00, d01;
+    float x, y, h, d00, d01, d02=0.f;
 
     h = 1.0f/N;
 
@@ -150,9 +150,12 @@ static void draw_density ( void )
         x = (i-0.5f)*h;
         for ( j=0 ; j<=N ; j++ ) {
             y = (j-0.5f)*h;
-            d00 = dens[IX(i,j)];
-            d01 = fabs(u[IX(i,j)] + v[IX(i,j)])/4.f;
-            glColor4f (d00, d01, d01/2.f, d00); glVertex2f ( x, y );
+            d00 = dens[IX(i,j)]*3.f;
+            if(d00>1.f)
+                d00=1.f;
+
+            glColor4f (d00, d00, d00, 1);
+            glVertex2f ( x, y );
         }
     }
 
@@ -213,7 +216,15 @@ static void get_from_UI ( float * d, float * u, float * v )
         if(i+N/6<N)
         {
             for(int k=i; k<i+N/6; k++)
-                d[IX(k,j)] = source/5;
+            {
+                if(emmiting)
+                {
+                    if(k%2)
+                        d[IX(k,j)] = source/5;
+                }
+                else
+                    d[IX(k,j)] = source/5;
+            }
         }
         //d[IX(i,j)]=source;
     }
@@ -230,7 +241,7 @@ static void apply_gravity(float *d, float *u, float *v)
     int i,j;
 
 
-    if(emit)
+    if(emmiting)
     {
         FOR_EACH_CELL
                 v[IX(i,j)]=-gravity;
@@ -266,7 +277,7 @@ static void key_func ( unsigned char key, int x, int y )
         dvel = !dvel;
         break;
     case ' ':
-        emit=!emit;
+        emmiting=!emmiting;
     }
 }
 
@@ -310,15 +321,15 @@ static void show_framerate()
 {
     if(frame_iter==0)
         start=clock();
-    if(frame_iter<15)
+    if(frame_iter<2)
         frame_iter++;
     else
     {
         frame_iter=0;
         stop=clock();
-        seconds = (float)(stop - start) / CLOCKS_PER_SEC / 15.f;
+        seconds = (float)(stop - start) / CLOCKS_PER_SEC / 2.f;
         seconds = 1.f/seconds;
-        //dt=1.f/seconds; //optional adjustment of physics frames to time rate to keep it realistic
+       // dt=0.1f/seconds; //optional adjustment of physics frames to time rate to keep it realistic
         snprintf(framerate, 8, "%f", seconds);
     }
 
@@ -404,13 +415,13 @@ int main ( int argc, char ** argv )
     }
 
     if ( argc == 1 ) {
-        N = 250;
+        N = 400;
         dt = 0.005f;
-        diff = 0.000f;
+        diff = 0.00001f;
         visc = 0.0000f;
         force = 2000.0f;
         source = 1000.0f;
-        gravity = 8.f;
+        gravity = 16.f;
         fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g gravity=%g\n",
                   N, dt, diff, visc, force, source, gravity );
     } else {
