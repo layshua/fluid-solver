@@ -9,11 +9,6 @@
 #define FOR_EACH_CELL for ( i=1 ; i<=N ; i++ ) { for ( j=1 ; j<=N ; j++ ) {
 #define END_FOR }}
 
-/* TODO:
- * 1. Add MacCormack advection
- * 2. Store density in a higher resolution grid than velocity. (2 up to 4 times N)
- * 3. Investigate SOR. It seems to add gain to vortices.
-*/
 
 /** Adds new source of either velocity or density from UI */
 void add_source ( int N, float * x, float * s, float dt )
@@ -54,10 +49,10 @@ void set_bnd ( int N, int b, float * x, bool velocity)
         x[IX(i ,j)] =  -x[IX(i+1 ,j-1)];
 
     //bounce off domain boundaries
-    //x[IX(0  ,i)] = b==1 ? -x[IX(1,i)] : x[IX(1,i)];   //left
-    //x[IX(N+1,i)] = b==1 ? -x[IX(N,i)] : x[IX(N,i)];   //right
-    //x[IX(i,0  )] = b==2 ? -x[IX(i,1)] : x[IX(i,1)];  //bottom
-    //x[IX(i,N+1)] = b==2 ? -x[IX(i,N)] : x[IX(i,N)];  //top
+//    x[IX(0  ,i)] = b==1 ? -x[IX(1,i)] : x[IX(1,i)];   //left
+//    x[IX(N+1,i)] = b==1 ? -x[IX(N,i)] : x[IX(N,i)];   //right
+//    x[IX(i,N+1)] = b==2 ? -x[IX(i,N)] : x[IX(i,N)];  //top
+//    x[IX(i,0  )] = b==2 ? -x[IX(i,1)] : x[IX(i,1)];  //bottom
 
     //clamp densities
     if(velocity==0)
@@ -79,7 +74,7 @@ void lin_solve ( int N, int b, float * x, float * x0, float a, float c )
     //it must be between 1 and 2
     float w = 1.5f;
 
-    for ( k=0 ; k<5 ; k++ ) {
+    for ( k=0 ; k<10 ; k++ ) {
         FOR_EACH_CELL
                 x[IX(i,j)]=x[IX(i,j)] + w*((x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]))/c -x[IX(i,j)] );
                 //x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) )/c; //old jacobi for comparison
@@ -102,8 +97,10 @@ void diffuse ( int N, int b, float * x, float * x0, float diff, float dt )
     END_FOR
 }
 
-/** performs BFECC advection basing on semi-lagrangian method (see function advect) */
-void advect_BFECC ( int N, int b, float * d, float * d0, float * u, float * v, float dt )
+/** performs BFECC advection basing on semi-lagrangian method (see function advect)
+* @param coeff regulates correction coefficient. < 2 increases values with each iterations while >2 introduces damping
+*/
+void advect_BFECC ( int N, int b, float * d, float * d0, float * u, float * v, float dt, float coeff )
 {
     int i, j, i0, j0, i1, j1;
     float x, y, s0, t0, s1, t1, dt0;
@@ -149,7 +146,7 @@ void advect_BFECC ( int N, int b, float * d, float * d0, float * u, float * v, f
 
     //set new values
     d[IX(i,j)] = s0*(t0*d0[IX(i0,j0)] + t1*d0[IX(i0,j1)])+
-            s1*(t0*d0[IX(i1,j0)] + t1*d0[IX(i1,j1)]);
+                 s1*(t0*d0[IX(i1,j0)] + t1*d0[IX(i1,j1)]);
     END_FOR
     set_bnd ( N, b, d, vel);
 
@@ -189,7 +186,7 @@ void advect_BFECC ( int N, int b, float * d, float * d0, float * u, float * v, f
 
     //subtract error comparing backward and forward differentiation
     FOR_EACH_CELL
-            fi_t[IX(i,j)] = d0[IX(i,j)] + (d0[IX(i,j)] - fi_[IX(i,j)])/2.f;
+            fi_t[IX(i,j)] = d0[IX(i,j)] + (d0[IX(i,j)] - fi_[IX(i,j)])/coeff;
     END_FOR
     set_bnd ( N, b, fi_t, vel);
 
@@ -324,8 +321,8 @@ void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc,
     SWAP ( u0, u );
     SWAP ( v0, v );
 
-    advect_BFECC ( N, 1, u, u0, u0, v0, dt );
-    advect_BFECC ( N, 2, v, v0, u0, v0, dt );
+    advect_BFECC ( N, 1, u, u0, u0, v0, dt, 2.f);
+    advect_BFECC ( N, 2, v, v0, u0, v0, dt, 2.f);
     project ( N, u, v, u0, v0 );
 }
 
@@ -337,7 +334,7 @@ void dens_step ( int N, float * x, float * x0, float * u, float * v, float diff,
 
     diffuse ( N, 0, x, x0, diff, dt );
     SWAP ( x0, x );
-    advect ( N, 0, x, x0, u, v, dt );
+    advect_BFECC( N, 0, x, x0, u, v, dt, 3.f );
 }
 
 

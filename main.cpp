@@ -46,6 +46,23 @@ static bool paused = false;
   ----------------------------------------------------------------------
 */
 
+static void translate(bool *obstacle, int px, int py)
+{
+    int size = (N+2)*(N+2);
+    bool *o_new  = (bool *) calloc (size, sizeof(bool));
+
+    int i,j,x,y;
+    FOR_EACH_CELL
+           x=i+px;
+           y=j+py;
+           if(x>0 && x<N && y>0 && y<N)
+            o_new[IX(x,y)]=obstacle[IX(i,j)];
+    END_FOR
+
+    FOR_EACH_CELL
+         obstacle[IX(i,j)]=o_new[IX(i,j)];
+    END_FOR
+}
 
 static void free_data ( void )
 {
@@ -77,6 +94,7 @@ static int allocate_data ( void )
     dens		= (float *) malloc ( size*sizeof(float) );
     dens_prev	= (float *) malloc ( size*sizeof(float) );
     obstacle    = (bool *)  malloc ( size*sizeof(bool)  );
+
 
     if ( !u || !v || !u_prev || !v_prev || !dens || !dens_prev || !obstacle ) {
         fprintf ( stderr, "cannot allocate data\n" );
@@ -115,7 +133,7 @@ static void draw_velocity ( void )
 {
     int i, j;
     float x, y, h;
-    float norm = force/100.f;
+    float norm = force/8.f;
     h = 1.0f/N;
 
     glColor3f ( 1.0f, 1.0f, 1.0f );
@@ -241,13 +259,7 @@ static void get_from_UI ( float * d, float * u, float * v )
         {
             for(int k=i; k<i+N/6; k++)
             {
-                if(emmiting)
-                {
-
-                        d[IX(k,j)] = source/5;
-                }
-                else
-                    d[IX(k,j)] = source/5;
+                    d[IX(k,j)] = source;
             }
         }
         //d[IX(i,j)]=source;
@@ -273,6 +285,10 @@ static void apply_gravity(float *d, float *u, float *v)
 //        FOR_EACH_CELL
 //                v[IX(i,j)]=-gravity;
 //        END_FOR
+//                for(int i=N/6; i<N-N/6; i++)
+
+//                if(!i==i%6)
+//                        d[IX(i,N-N/8)]=source;
 
     }
 
@@ -309,6 +325,22 @@ static void key_func ( unsigned char key, int x, int y )
     case 'P':
     case 'p':
         paused=!paused;
+        break;
+    case 'w':
+    case 'W':
+        translate(obstacle, 0,1);
+        break;
+    case 's':
+    case 'S':
+        translate(obstacle, 0,-1);
+        break;
+    case 'a':
+    case 'A':
+        translate(obstacle, -1,0);
+        break;
+    case 'd':
+    case 'D':
+        translate(obstacle, 1,0);
         break;
     }
 }
@@ -451,11 +483,11 @@ int main ( int argc, char ** argv )
     if ( argc == 1 ) {
         N = 250;
         dt = 0.01f;
-        diff = 0.0000f;
-        visc = 0.000000f;
+        diff = 0.0001f;
+        visc = 0.00000f;
         force = 1000.0f;
-        source = 600.0f;
-        gravity = 3.f;
+        source = 1000.0f;
+        gravity = 8.f;
         fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g gravity=%g\n",
                   N, dt, diff, visc, force, source, gravity );
     } else {
