@@ -9,7 +9,7 @@
 bool *obstacle;
 
 void add_source ( int N, float * x, float * s, float dt );
-void set_bnd ( int N, int b, float * x, bool velocity );
+void set_bnd (int N, int b, float * x, float *x0, bool velocity);
 void lin_solve ( int N, int b, float * x, float * x0, float a, float c );
 void diffuse ( int N, int b, float * x, float * x0, float diff, float dt );
 void advect ( int N, int b, float * d, float * d0, float * u, float * v, float dt );

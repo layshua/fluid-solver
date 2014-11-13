@@ -197,7 +197,7 @@ static void draw_density ( void )
             d01 = fabs(u[IX(i,j)] + v[IX(i,j)])/2.f;
             r=fabs(d00*(d01));
 
-            glColor4f (r+0.5, r, r-0.6f,d00); glVertex2f ( x, y );
+            glColor4f (.8f+r, r, r/2.f,d00); glVertex2f ( x, y );
         }
     }
 
@@ -262,7 +262,7 @@ static void get_from_UI ( float * d, float * u, float * v )
                     d[IX(k,j)] = source;
             }
         }
-        //d[IX(i,j)]=source;
+//        d[IX(i,j)]=source;
     }
 
     omx = mx;
@@ -280,7 +280,7 @@ static void apply_gravity(float *d, float *u, float *v)
     if(emmiting)
     {
                 for(int i=N/2.4; i<N-N/2.4; i++)
-                    v[IX(i,N/3)]=force/6.f;
+                    v[IX(i,N/3)]=force;
 
 //        FOR_EACH_CELL
 //                v[IX(i,j)]=-gravity;
@@ -288,7 +288,7 @@ static void apply_gravity(float *d, float *u, float *v)
 //                for(int i=N/6; i<N-N/6; i++)
 
 //                if(!i==i%6)
-//                        d[IX(i,N-N/8)]=source;
+//                        d[IX(i,N-N/8)]=10*source;
 
     }
 
@@ -481,11 +481,11 @@ int main ( int argc, char ** argv )
     }
 
     if ( argc == 1 ) {
-        N = 250;
-        dt = 0.01f;
-        diff = 0.0001f;
-        visc = 0.00000f;
-        force = 1000.0f;
+        N = 300;
+        dt = 0.005f;
+        diff = 0.00001f;
+        visc = 0.00005;
+        force = 2000.0f;
         source = 1000.0f;
         gravity = 8.f;
         fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g gravity=%g\n",

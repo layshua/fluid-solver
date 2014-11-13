@@ -17,11 +17,9 @@ void add_source ( int N, float * x, float * s, float dt )
     for ( i=0 ; i<size ; i++ ) x[i] += dt*s[i];
 }
 
-
-
 /** Sets boundaries for whatever is passed as argument. This is used to
  * apply obstacles such as lattice boundaries or any other objects */
-void set_bnd ( int N, int b, float * x, bool velocity)
+void set_bnd ( int N, int b, float * x, float *x0, bool velocity)
 {
     int i;
     int j;
@@ -29,40 +27,44 @@ void set_bnd ( int N, int b, float * x, bool velocity)
     FOR_EACH_CELL
     //bounce off obstacles
     if(obstacle[IX(i-1, j)])
-        x[IX(i ,j)] = b==1 ? -x[IX(i+1 ,j)] : x[IX(i+1 ,j)];
+        x[IX(i ,j)] = b==1 ? -x0[IX(i+1 ,j)] : x0[IX(i+1 ,j)];
     if(obstacle[IX(i+1, j)])
-        x[IX(i ,j)] = b==1 ? -x[IX(i-1 ,j)] : x[IX(i-1 ,j)];
+        x[IX(i ,j)] = b==1 ? -x0[IX(i-1 ,j)] : x0[IX(i-1 ,j)];
     if(obstacle[IX(i, j-1)])
-        x[IX(i ,j)] = b==2 ? -x[IX(i ,j+1)] : x[IX(i ,j+1)];
+        x[IX(i ,j)] = b==2 ? -x0[IX(i ,j+1)] : x0[IX(i ,j+1)];
     if(obstacle[IX(i, j+1)])
-        x[IX(i ,j)] = b==2 ? -x[IX(i ,j-1)] : x[IX(i ,j-1)];
+        x[IX(i ,j)] = b==2 ? -x0[IX(i ,j-1)] : x0[IX(i ,j-1)];
 
+    if(velocity==0)
+    {
     //use also Moore neigbourhood (decreases framerate by 8%!)
     //...however improves flows past obstacles greatly
     if(obstacle[IX(i+1, j+1)])
-        x[IX(i ,j)] =  -x[IX(i-1 ,j-1)];
+        x[IX(i ,j)] =  -x0[IX(i-1 ,j-1)];
     if(obstacle[IX(i+1, j-1)])
-        x[IX(i ,j)] =  -x[IX(i-1 ,j+1)];
+        x[IX(i ,j)] =  -x0[IX(i-1 ,j+1)];
     if(obstacle[IX(i-1, j-1)])
-        x[IX(i ,j)] =  -x[IX(i+1 ,j+1)];
+        x[IX(i ,j)] =  -x0[IX(i+1 ,j+1)];
     if(obstacle[IX(i-1, j+1)])
-        x[IX(i ,j)] =  -x[IX(i+1 ,j-1)];
-
+        x[IX(i ,j)] =  -x0[IX(i+1 ,j-1)];
+    }
     //bounce off domain boundaries
-//    x[IX(0  ,i)] = b==1 ? -x[IX(1,i)] : x[IX(1,i)];   //left
-//    x[IX(N+1,i)] = b==1 ? -x[IX(N,i)] : x[IX(N,i)];   //right
-//    x[IX(i,N+1)] = b==2 ? -x[IX(i,N)] : x[IX(i,N)];  //top
-//    x[IX(i,0  )] = b==2 ? -x[IX(i,1)] : x[IX(i,1)];  //bottom
+    x[IX(0  ,i)] = b==1 ? -x0[IX(1,i)] : x0[IX(1,i)];   //left
+    x[IX(N+1,i)] = b==1 ? -x0[IX(N,i)] : x0[IX(N,i)];   //right
+    x[IX(i,N+1)] = b==2 ? -x0[IX(i,N)] : x0[IX(i,N)];  //top
+    x[IX(i,0  )] = b==2 ? -x0[IX(i,1)] : x0[IX(i,1)];  //bottom
 
     //clamp densities
     if(velocity==0)
     {
-        if(x[IX(i,j)]>1.f)
+        if(x0[IX(i,j)]>1.f)
             x[IX(i,j)]=1.f;
-        else if(x[IX(i,j)]<0.f)
+        else if(x0[IX(i,j)]<0.f)
             x[IX(i,j)]=0.f;
     }
     END_FOR
+
+    SWAP(x0,x);
 }
 
 /** Finds inverse matrix using successive overrelaxation method
@@ -74,13 +76,13 @@ void lin_solve ( int N, int b, float * x, float * x0, float a, float c )
     //it must be between 1 and 2
     float w = 1.5f;
 
-    for ( k=0 ; k<10 ; k++ ) {
+    for ( k=0 ; k<4 ; k++ ) {
         FOR_EACH_CELL
                 x[IX(i,j)]=x[IX(i,j)] + w*((x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]))/c -x[IX(i,j)] );
                 //x[IX(i,j)] = (x0[IX(i,j)] + a*(x[IX(i-1,j)]+x[IX(i+1,j)]+x[IX(i,j-1)]+x[IX(i,j+1)]) )/c; //old jacobi for comparison
         END_FOR
 
-        set_bnd ( N, b, x, true );
+        set_bnd ( N, b, x, x0, true );
     }
 }
 
@@ -104,10 +106,6 @@ void advect_BFECC ( int N, int b, float * d, float * d0, float * u, float * v, f
 {
     int i, j, i0, j0, i1, j1;
     float x, y, s0, t0, s1, t1, dt0;
-    bool vel = true;
-
-    if(b==0)
-        vel=false;
 
     dt0 = dt*N;
 
@@ -148,7 +146,7 @@ void advect_BFECC ( int N, int b, float * d, float * d0, float * u, float * v, f
     d[IX(i,j)] = s0*(t0*d0[IX(i0,j0)] + t1*d0[IX(i0,j1)])+
                  s1*(t0*d0[IX(i1,j0)] + t1*d0[IX(i1,j1)]);
     END_FOR
-    set_bnd ( N, b, d, vel);
+    set_bnd ( N, b, d, d0, b);
 
     //Step 2: determine fi_
     FOR_EACH_CELL
@@ -182,13 +180,13 @@ void advect_BFECC ( int N, int b, float * d, float * d0, float * u, float * v, f
     fi_[IX(i,j)] = s0*(t0*d[IX(i0,j0)] + t1*d[IX(i0,j1)])+
             s1*(t0*d[IX(i1,j0)] + t1*d[IX(i1,j1)]);
     END_FOR
-    set_bnd ( N, b, fi_, vel);
+    set_bnd ( N, b, fi_, fi_, b);
 
     //subtract error comparing backward and forward differentiation
     FOR_EACH_CELL
             fi_t[IX(i,j)] = d0[IX(i,j)] + (d0[IX(i,j)] - fi_[IX(i,j)])/coeff;
     END_FOR
-    set_bnd ( N, b, fi_t, vel);
+    set_bnd ( N, b, fi_t, fi_t, b);
 
 
     //Final step - integrate
@@ -224,7 +222,7 @@ void advect_BFECC ( int N, int b, float * d, float * d0, float * u, float * v, f
                  s1*(t0*fi_t[IX(i1,j0)] + t1*fi_t[IX(i1,j1)]);
     END_FOR
 
-    set_bnd ( N, b, d, vel);
+    set_bnd ( N, b, d, d0, b);
 }
 
 //OBSOLETE//
@@ -271,7 +269,7 @@ void advect ( int N, int b, float * d, float * d0, float * u, float * v, float d
                  s1*(t0*d0[IX(i1,j0)] + t1*d0[IX(i1,j1)]);
     END_FOR
 
-    set_bnd ( N, b, d, true );
+    set_bnd ( N, b, d, d0, true );
 }
 
 /**
@@ -287,9 +285,9 @@ void project ( int N, float * u, float * v, float * p, float * div )
     p[IX(i,j)] = 0;
     END_FOR
 
-            //neccessary to prevent simulation from blowing up
-            set_bnd ( N, 0, div, true );
-    set_bnd ( N, 0, p, true );
+    //neccessary to prevent simulation from blowing up
+    set_bnd ( N, 0, div, div, true );
+    set_bnd ( N, 0, p, p, true );
 
     //find inverse matrix to obtain velocity gradient field
     lin_solve ( N, 0, p, div, 1, 4 );
@@ -301,8 +299,8 @@ void project ( int N, float * u, float * v, float * p, float * div )
     END_FOR
 
     //neccessary to prevent simulation from blowing up
-    set_bnd ( N, 1, u, true);
-    set_bnd ( N, 2, v, true );
+    set_bnd ( N, 1, u, u, true);
+    set_bnd ( N, 2, v, v, true );
 }
 
 /** Performs velocity step for the simulation (this is performed first) */
@@ -334,7 +332,7 @@ void dens_step ( int N, float * x, float * x0, float * u, float * v, float diff,
 
     diffuse ( N, 0, x, x0, diff, dt );
     SWAP ( x0, x );
-    advect_BFECC( N, 0, x, x0, u, v, dt, 3.f );
+    advect_BFECC( N, 0, x, x0, u, v, dt, 4.f );
 }
 
 
