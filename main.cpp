@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <GL/gl.h>
-#include <GL/glut.h>
+#include <GL/freeglut.h>
 #include <time.h>
 #include <stdlib.h>
 #include <cmath>
@@ -14,7 +14,7 @@ char framerate[8];
 /* macros */
 
 #define IX(i,j) ((i)+(N+2)*(j))
-#define FOR_EACH_CELL for ( i=1 ; i<=N ; i++ ) { for ( j=1 ; j<=N ; j++ ) {
+#define FOR_EACH_CELL for ( i=1 ; i<=N ; ++i ) { for ( j=1 ; j<=N ; ++j ) {
 #define END_FOR }}
 
 /* external definitions (from solver.c) */
@@ -133,7 +133,7 @@ static void draw_velocity ( void )
 {
     int i, j;
     float x, y, h;
-    float norm = force/8.f;
+    float norm = force/32.f;
     h = 1.0f/N;
 
     glColor3f ( 1.0f, 1.0f, 1.0f );
@@ -197,7 +197,7 @@ static void draw_density ( void )
             d01 = fabs(u[IX(i,j)] + v[IX(i,j)])/2.f;
             r=fabs(d00*(d01));
 
-            glColor4f (.8f+r, r, r/2.f,d00); glVertex2f ( x, y );
+            glColor4f (.8f+r, r, d01*r*2,d00); glVertex2f ( x, y );
         }
     }
 
@@ -255,14 +255,22 @@ static void get_from_UI ( float * d, float * u, float * v )
     }
 
     if ( mouse_down[2] ) {
-        if(i+N/6<N)
-        {
-            for(int k=i; k<i+N/6; k++)
-            {
-                    d[IX(k,j)] = source;
-            }
-        }
-//        d[IX(i,j)]=source;
+//        if(i+N/6<N)
+//        {
+//            for(int k=i; k<i+N/6; k++)
+//            {
+//                    d[IX(k,j)] = source;
+//            }
+//        }
+        d[IX(i,j)]=source;
+        d[IX(i-1, j-1)] = source;
+        d[IX(i+1, j-1)] = source;
+        d[IX(i-1, j+1)] = source;
+        d[IX(i+1, j+1)] = source;
+        d[IX(i,j-1)]=source;
+        d[IX(i,j+1)]=source;
+        d[IX(i+1,j)]=source;
+        d[IX(i-1,j)]=source;
     }
 
     omx = mx;
@@ -481,12 +489,12 @@ int main ( int argc, char ** argv )
     }
 
     if ( argc == 1 ) {
-        N = 300;
+        N = 255;
         dt = 0.005f;
         diff = 0.00001f;
-        visc = 0.00005;
-        force = 2000.0f;
-        source = 1000.0f;
+        visc = 0.00001f;
+        force = 5000.0f;
+        source = 3000.0f;
         gravity = 8.f;
         fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g gravity=%g\n",
                   N, dt, diff, visc, force, source, gravity );
